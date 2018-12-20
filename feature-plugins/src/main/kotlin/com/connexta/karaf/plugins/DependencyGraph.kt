@@ -22,9 +22,10 @@ class DependencyGraph(
     init {
         featureToBundles = featuresService.listInstalledFeatures()
             .associate { feature ->
-                feature to feature.bundles.mapNotNull { bundle ->
-                    bundleContext.getBundle(bundle.location)
-                }.filter { it.bundleId >= bundleService.systemBundleThreshold }.toSet()
+                feature to feature.bundles
+                    .mapNotNull { bundle ->
+                        bundleContext.getBundle(bundle.location)
+                    }.toSet()
             }
 
         val features = featuresService.listInstalledFeatures()
@@ -34,7 +35,7 @@ class DependencyGraph(
                 .forEach { dependency -> featureGraph.addEdge(feature, dependency) }
         }
 
-        val bundles = bundleContext.bundles.filter { it.bundleId >= bundleService.systemBundleThreshold }
+        val bundles = bundleContext.bundles.filter { featureToBundles.values.flatten().contains(it) }.toSet()
         bundles.forEach { bundleGraph.addVertex(it) }
         bundles.forEach { bundle ->
             bundleService.getWiredBundles(bundle).values.filter { bundles.contains(it) }
