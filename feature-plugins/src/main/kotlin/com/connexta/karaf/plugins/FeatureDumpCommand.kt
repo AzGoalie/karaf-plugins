@@ -1,9 +1,12 @@
 package com.connexta.karaf.plugins
 
-import com.connexta.karaf.plugins.writers.DependencyTreeWriter
+import org.apache.karaf.features.Feature
 import org.apache.karaf.shell.api.action.Command
 import org.apache.karaf.shell.api.action.Option
 import org.apache.karaf.shell.api.action.lifecycle.Service
+import org.jgrapht.Graph
+import org.jgrapht.graph.DefaultEdge
+import org.jgrapht.traverse.DepthFirstIterator
 import java.io.File
 
 @Command(scope = "feature", name = "dump", description = "Dumps the hierarchy of installed features")
@@ -34,18 +37,32 @@ class FeatureDumpCommand : BaseFeatureCommand() {
         }
 
         featuresService.listRepositories()
-            .map { DependencyGraph(featureCache, it) }
-            .filter(DependencyGraph::isNotEmpty)
-            .forEach {
-                val dependencyTree = DependencyTreeWriter.printAsTree(it, featureCache)
-                if (!printToScreen) {
-                    File("$outputFolder/${it.repository.name}.txt")
-                        .writeText(dependencyTree)
+            .map { repository ->
+                repository.name to repository.features.filter { featuresService.isInstalled(it) }
+            }
+            .filter { it.second.isNotEmpty() }
+            .forEach { (repoName, rootFeatures) ->
+                val tree = rootFeatures.joinToString("\n") { printFeatures(it, featureGraph) }
+                if (printToScreen) {
+                    println("Repository $repoName")
+                    println(tree)
                 } else {
-                    println(dependencyTree)
+                    File("$outputFolder/$repoName.txt").writeText(tree)
                 }
             }
 
         return null
+    }
+
+    private fun printFeatures(feature: Feature, graph: Graph<Feature, DefaultEdge>): String {
+        val sb = StringBuilder()
+        val iter = DepthFirstIterator(graph, feature)
+        while (iter.hasNext()) {
+            val f = iter.next()
+            val padding = "\t".repeat(iter.stack.filter { it == DepthFirstIterator.SENTINEL }.size)
+            sb.append("$padding $f").append("\n")
+            f.bundles.forEach { sb.append("\t$padding ${it.location}").append("\n") }
+        }
+        return sb.toString()
     }
 }

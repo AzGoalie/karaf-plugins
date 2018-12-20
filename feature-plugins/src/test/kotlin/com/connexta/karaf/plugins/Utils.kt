@@ -37,6 +37,7 @@ fun mockFeaturesService(
         on { listInstalledFeatures() } doReturn features.toTypedArray()
         on { listRepositories() } doReturn repositories.toTypedArray()
         features.forEach { f ->
+            on { isInstalled(f) } doReturn true
             on { getFeature(f.name, f.version) } doReturn f
         }
     }

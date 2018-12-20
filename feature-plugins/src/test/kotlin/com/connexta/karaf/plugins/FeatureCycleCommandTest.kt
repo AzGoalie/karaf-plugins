@@ -1,16 +1,12 @@
 package com.connexta.karaf.plugins
 
-import org.hamcrest.CoreMatchers.equalTo
+import org.hamcrest.CoreMatchers.containsString
 import org.junit.Assert.assertThat
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
 
 class FeatureCycleCommandTest {
-    @Rule
-    @JvmField
-    val tmpFolder = TemporaryFolder()
-
     private val features = listOf(
         mockFeature("f1", listOf("f2")),
         mockFeature("f2", listOf("f1"))
@@ -29,19 +25,19 @@ class FeatureCycleCommandTest {
 
     @Test
     fun `should print when there are cycles`() {
-        val folder = tmpFolder.newFolder("cycles")
-        command.outputFolder = folder.canonicalPath
+        val output = ByteArrayOutputStream()
+        System.setOut(PrintStream(output))
         command.execute()
-        assertThat(folder.list(), equalTo(arrayOf("${repository.name}.txt")))
+        assertThat(output.toString(), containsString("|>"))
     }
 
     @Test
     fun `there should be no output if there are no cycles`() {
-        val folder = tmpFolder.newFolder("cycles")
+        val output = ByteArrayOutputStream()
+        System.setOut(PrintStream(output))
         val emptyFeaturesService = mockFeaturesService(listOf())
         command.setFeaturesService(emptyFeaturesService)
-        command.outputFolder = folder.canonicalPath
         command.execute()
-        assertThat(folder.list(), equalTo(emptyArray()))
+        assertThat(output.toString(), containsString("No cycles found"))
     }
 }
