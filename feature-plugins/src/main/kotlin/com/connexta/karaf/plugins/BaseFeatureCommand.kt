@@ -5,7 +5,6 @@ import org.apache.karaf.features.Feature
 import org.apache.karaf.features.FeaturesService
 import org.apache.karaf.shell.api.action.Action
 import org.apache.karaf.shell.api.action.lifecycle.Reference
-import org.jetbrains.annotations.TestOnly
 import org.jgrapht.Graph
 import org.jgrapht.graph.DefaultDirectedGraph
 import org.jgrapht.graph.DefaultEdge
@@ -21,7 +20,6 @@ abstract class BaseFeatureCommand : Action {
     @Reference
     protected lateinit var bundleContext: BundleContext
 
-    @TestOnly
     internal fun setFeaturesService(featuresService: FeaturesService) {
         this.featuresService = featuresService
     }
